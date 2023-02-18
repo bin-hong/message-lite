@@ -23,7 +23,7 @@ make
 
 #install :TODO
 
-#How to user this message lite
+#How to use this message lite
 1.C/S 
 server demo : Message_Server
 client app  : Message_Client
