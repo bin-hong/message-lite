@@ -1,4 +1,3 @@
-
 /*!
  * \author
  * hongbin <64404983@qq.com>
@@ -81,7 +80,11 @@ void msl_send_online_users(MSL_User_List* head, int fd)
 	}
 }
 
-
+/*
+*@return  -1: paramter err
+*               0: user exist
+*		   1: inser OK
+*/
 int msl_user_regsiter(MSL_User_List **users, MSL_Message *msg,int fd)
 {
 	int ret_status =-1;
@@ -104,7 +107,10 @@ int msl_user_regsiter(MSL_User_List **users, MSL_Message *msg,int fd)
 
 		/*insert into list*/
 		msl_user_insert(*users,new_user);
+		ret_status = 1;
 		
+	}else{
+		ret_status = 0;
 	}
 	return ret_status;
 }
@@ -155,7 +161,6 @@ int msl_user_login(MSL_User_List **users, MSL_Message *msg,int fd)
 }
 
 
-
 /*
 *
 * @return   -2: passwd error 
@@ -201,6 +206,28 @@ int msl_user_logout(MSL_User_List **users, MSL_Message *msg,int fd)
 	}
 	return ret_status;
 }
+
+int msl_user_logout_by_session(MSL_User_List **users,int fd)
+{
+	int ret_status =USER_STATUS_ERROR;
+	if(NULL==users ||fd <=0){
+		return ret_status;
+	}
+	
+	MSL_User_List *head = *users;
+       MSL_User_List *curr = head->next;
+
+	while(curr!=NULL ){ 	
+		if(curr->fd==fd){
+			ret_status =USER_STATUS_SUCESS; 
+			curr->fd =-1;         /*set fd disable*/
+			curr->isOnline =0;  /*set unline*/
+		}
+		curr = curr->next;
+	}
+	return 1;
+}
+
 
 /*show userlist connections*/
 void msl_show_user_list(MSL_User_List **users)
@@ -423,7 +450,7 @@ int msl_show_user_unsend(MSL_User_List **users,int fd)
 	}
 	unsend_msgs =unsend_msgs->next;
 	/*check unsend msg*/
-	while(NULL!=unsend_msgs && NULL!=unsend_msgs->next){
+	while(NULL!=unsend_msgs){
 		debug_printf("unsend msg to [%s]",unsend_msgs->message.destName);
 		debug_printf("unsend msg buf[%s]:",unsend_msgs->message.msg_buffer);
 		unsend_msgs =unsend_msgs->next;
@@ -449,30 +476,38 @@ int msl_send_save_message(MSL_User_List **users ,int fd)
        char send_buf[1050] ={'\0'};
        MSL_User_List *head = *users;
        MSL_User_List *dest = head->next;
+	MSL_MessageList *head_unsend_msgs =NULL;   
    	MSL_MessageList *unsend_msgs =NULL;
+	MSL_MessageList *tmp_msgs =NULL;
        while (dest) {
 	     if(fd ==dest->fd){
 		 /* found myself*/
-		 unsend_msgs=dest->unSendMessages;
+		 head_unsend_msgs=dest->unSendMessages;
 		 break;
 	     }
             dest = dest->next;	
        }
 	/*check head*/
-	if(NULL==unsend_msgs){
+	if(NULL==head_unsend_msgs){
 		return  -1;
 	}
-	unsend_msgs =unsend_msgs->next;
+	unsend_msgs =head_unsend_msgs->next;
 	while(NULL!=unsend_msgs){
 
 		debug_printf("send save msg to [%s]",unsend_msgs->message.destName);
 			
 	   	(void)snprintf(send_buf, sizeof(send_buf),"from %s msg:%s",
 	   		 unsend_msgs->message.myName ,unsend_msgs->message.msg_buffer);
-		send(fd,send_buf,strlen(send_buf),0);			
-		unsend_msgs =unsend_msgs->next;
-	}
+		send(fd,send_buf,strlen(send_buf),0);
 
+		/*save next*/
+		tmp_msgs = unsend_msgs->next;
+		/*remove this msg*/
+		free(unsend_msgs);
+		/*next*/
+		unsend_msgs =tmp_msgs;
+	}
+	head_unsend_msgs->next=NULL;
 	debug_printf("%s out[%d]",__func__,ret_status);     
 	return ret_status;
 }

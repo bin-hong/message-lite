@@ -315,9 +315,8 @@ int msl_handle_event(MSLDaemonLocal *daemon_local)
 	     {
                 msl_event_handler_remove_fd(pEvent, fd);
 		  daemon_local->client_connections--;
-		  
-		  /*disable fd that in userlist*/
-		
+		  /*set this session user to offline*/
+		  msl_user_logout_by_session(&(daemon_local->user_list),fd);
             	}
 	     	 
             continue;
@@ -449,12 +448,13 @@ void msl_recv_message_handler(MSLDaemonLocal *daemon_local,int fd)
     {
 	msl_log(MSL_LOG_ERROR, "fd[%d] was disconnected",fd);
 	msl_event_handler_remove_fd(&(daemon_local->pEvent), fd);
+	msl_user_logout_by_session(users,fd);  /*set this session user to offline*/
        daemon_local->client_connections--;
 
 	return; 
     }  
     else
-    {  
+    {
         /*register*/
         if(MSL_REG ==RecvInfo.commad)
         {	

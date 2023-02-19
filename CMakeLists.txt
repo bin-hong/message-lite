@@ -64,6 +64,9 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/src_mc message_client_SRC)
 set(message_server Message_Server  )
 set(message_client Message_Client  )
 
+#set sub fot test
+add_subdirectory(test)
+
 #create execute process
 add_executable(${message_server} ${message_server_SRC})
 add_executable(${message_client} ${message_client_SRC})

@@ -1,5 +1,12 @@
-
-
+/*!
+ * \author
+ * hongbin <64404983@qq.com>
+ *
+ * \copyright Copyright@2023/2/17 . \n
+ * License free for any modify
+ *
+ * \file message-users.h
+ */
 #ifndef _MESSAGE_USER_H_
 #define _MESSAGE_USER_H_
 
@@ -46,6 +53,7 @@ void initUserList(MSL_User_List ** head);
 int msl_user_login(MSL_User_List ** users, MSL_Message *message,int fd);
 int msl_user_regsiter(MSL_User_List ** users, MSL_Message *message,int fd);
 int msl_user_logout(MSL_User_List **users, MSL_Message *msg,int fd);
+int msl_user_logout_by_session(MSL_User_List **users,int fd);
 int msl_check_user_status(MSL_User_List **users, MSL_Message *msg,int fd);
 int msl_check_dest_status(MSL_User_List **users, MSL_Message *msg,MSL_User_List**dest_user);
 int msl_send_message(MSL_User_List **users ,MSL_Message * msg);

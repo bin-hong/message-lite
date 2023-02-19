@@ -1,22 +1,20 @@
+
+/*!
+ * \author
+ * hongbin <64404983@qq.com>
+ *
+ * \copyright Copyright@2023/2/17 . \n
+ * License free for any modify
+ *
+ * \file message-daemon.h
+ */
+
 #ifndef _MESSAGE_DAEMON_H_
 #define _MESSAGE_DAEMON_H_
 
 #include <semaphore.h>
 #include "message_users.h"
 #include "message_event_handle.h"
-
-#if 0
-/*
- * The parameter of registered users list
- */
-typedef struct
-{
-    MslClientUser *user_list; /**< Pointer to MslClientUsers */
-    int num_client; /**< Number of client int user_list*/
-    MslClientUser *oline_list; /**< Pointer to oline list */
-    int num_oline; /**< Num of oline in oline list */
-} MslDaemonRegisteredUsers;
-#endif
 
 /**
  * The parameters of a daemon.
@@ -28,8 +26,6 @@ typedef struct
 	
 } MSLDaemon;
 
-
-
 typedef enum
 {
     MSL_RETURN_WRONG_PARAMETER = -2,
@@ -37,7 +33,6 @@ typedef enum
     MSL_RETURN_OK = 0,
     MSL_RETURN_TRUE = 1
 }MSLReturnValue;
-
 
 /**
  * The global parameters of a message server .

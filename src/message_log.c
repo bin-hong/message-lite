@@ -1,4 +1,10 @@
- 
+/*!
+ * \author
+ * hongbin <64404983@qq.com>
+ *
+ * \copyright Copyright@2023/2/17 . \n
+ * License free for any modify
+ */ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

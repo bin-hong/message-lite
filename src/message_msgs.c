@@ -1,5 +1,3 @@
-
-
 /*!
  * \author
  * hongbin <64404983@qq.com>
@@ -41,4 +39,23 @@ void msl_msg_insert(MSL_MessageList * head, MSL_MessageList *new_node)
 {
 	new_node->next =head->next;
 	head->next =new_node;
+}
+
+/*
+*release MSL_MessageList
+*/
+void msl_free_msgs(MSL_MessageList ** msglist)
+{
+	MSL_MessageList *temp=NULL;   
+   	MSL_MessageList *head =*msglist;
+	MSL_MessageList *curr =head;
+
+	while(NULL!=curr){
+		/*save next to temp*/
+		temp = curr->next;
+		/*remove curr */
+		free(curr);
+		/*next*/
+		curr =temp;
+	}
 }

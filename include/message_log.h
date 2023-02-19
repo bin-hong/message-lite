@@ -1,4 +1,12 @@
-
+/*!
+ * \author
+ * hongbin <64404983@qq.com>
+ *
+ * \copyright Copyright@2023/2/17 . \n
+ * License free for any modify
+ *
+ * \file message-log.h
+ */
 #ifndef _MESSAGE_LOG_H_
 #define _MESSAGE_LOG_H_
 

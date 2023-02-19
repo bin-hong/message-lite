@@ -37,9 +37,7 @@ void ms_get_version(char *buf, size_t size)
         msl_log(MSL_LOG_ERROR, "Wrong parameter: Null pointer\n");
         return;
     }
-
 /* Could change it read from config */
-
     snprintf(buf,
              size,
              "MessageLite Package Version: %s @%s %s\n",
@@ -59,11 +57,7 @@ void usage()
 
     printf("%s", version);
     printf("Usage: message-daemon [options]\n");
-    printf("Options:\n");
-    printf("  -i  address         ip address\n");
-    printf("  -h          Usage\n");
-    printf("  -p port    port to monitor for incoming requests (Default: 3491)\n");
-} /* usage() */
+}
 
 #if 0
 
@@ -79,28 +73,12 @@ int option_handling(MSLDaemonLocal *daemon_local, int argc, char *argv[])
 
 void *dealCommandfromConsole(void *pVar)
 {
-	char input[256];
-	while(1){
-		
-		if(scanf("%s", input)!=0)
-		{
-			if(strncmp("users",input,sizeof(input))==0){
-				//show register users
- 				msl_log(MSL_LOG_INFO, "user list:\n");
-			}
-			else if(strncmp("alive",input,sizeof(input))==0)
-			{
-				//show alive users
-				msl_log(MSL_LOG_INFO, "alive user list:\n");
-			}else{
-				//show commands
-			}
-		}
-	}
+	//TODO:
+	return 0;
 }
 void msl_local_cleanup()
 {
-	
+	//TODO:
 }
 
 int msl_daemon_local_connection_init(MSLDaemonLocal *daemon_local)

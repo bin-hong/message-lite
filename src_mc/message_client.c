@@ -1,4 +1,3 @@
-
 /*!
  * \author
  * hongbin <64404983@qq.com>
@@ -8,7 +7,6 @@
  *
  * \file message-cliet.c
  */
- 
 #include <stdio.h>      /* for printf() and fprintf() */
 #include <errno.h>
 #include <sys/socket.h> /* for socket(), connect(), (), and recv() */
@@ -36,6 +34,9 @@ void usage()
 } /* usage() */
 
 char G_Input_Buff[MESSAGE_MAX_LEN+NAME_MAX_LEN+2]={0};
+int my_status =-1;
+char my_name[20];
+char * g_str_login="login sucessful!";
 
 typedef struct
 {
@@ -93,35 +94,36 @@ int mc_client_connect(MlClient *client)
 	return 1;
 }
 
-pthread_t pid;
-//-1 unregister or unlogin
-//0 registered
-
 void menu()
 {
     printf("**Connect to server sucesses. Wecome to Message Lite!****\n\n");
     printf("**command follows\n\n");
-    printf(" login   \n\n");
-    printf(" regitser \n\n");
-    printf(" byte: quit \n\n");
-    printf(" @user message (user:send to user name ,message :contents)\n\n");
-    printf("   arg1: user [must 5-19 alpha or digit number] \n\n");
-    printf("   arg2: message [the messag can be multiple line with '\' at the line end] \n\n");
-    printf("  [meesage does not exceed 1023 characters]\n\n");
-    printf(" @all message (broadcast)    \n\n");	
-    printf(" byte: quit                  \n\n");
-    printf("**********************************\n");
+    printf("**cmd:login       \n\n");
+    printf("**cmd:regitser   \n\n");
+    printf("**cmd:bye         \n\n");
+    printf("**cmd:quit         \n\n");	
+    printf("**cmd:@[user] [msg] user:send to user name, msg:message)\n");
+    printf("             [msg] can be multiple line with'\\'at the line end\n");
+    printf("             [msg] does not exceed 1023 characters]\n\n");
+    printf("**cmd:@all [msg]  broadcast)    \n\n");
+    printf("*****************************************************\n");
 }
- 
+
+void prompt()
+{
+	if(1==my_status){
+		printf("%s|%s>",ml_client.servIP,my_name);   
+	}else{
+		printf("%s|>",ml_client.servIP);   
+	}
+}
 
 /*
 *-1: no login status.
 * 0:  regster status
 * 1:  login status
 */
-int my_status =-1;
-char my_name[20];
-char * g_str_login="login sucessful!";
+
 void *mc_recv_msg_func(void *arg)
 {
 	MlClient* client =(MlClient*)arg;
@@ -134,15 +136,20 @@ void *mc_recv_msg_func(void *arg)
 		if(len<=0)
 		{
 			close(client->sock);
-			printf("Disconnected to ml daemon\n");
-			return NULL;
+			printf("Disconnected to ml daemon. exited\n");
+			exit(0);
 		}
 		buf[len]='\0';
 		printf("%s\n",buf);
-		 if(0==strncmp(buf,g_str_login,strlen(g_str_login)))
-		 {	printf("--online!\n");
+		 if(NULL!=strstr(buf,g_str_login))
+		 {	
+		 	printf("Login OK!\n");
 		 	my_status=1;
+		 }else{
+			//printf("--buf=%s\n",buf);
+			//printf("--g_login=%s\n",g_str_login);
 		 }
+		 
 		if(1 ==my_status){
 			printf("%s|%s>",ml_client.servIP,my_name);
 		}
@@ -161,6 +168,7 @@ typedef enum
     MC_LOGOUT,	/**< logout*/
     MC_CONTINUE_INPUT, 	 /**< continue input*/
     MC_SEND,
+    MC_EXIT,
 }ParseResult;
 
 /*
@@ -190,13 +198,12 @@ ParseResult parseInput(char* input)
 	else if(0==strcmp(input,"bye"))
 	{
 		result =MC_LOGOUT;
+	}else if(0==strcmp(input,"quit"))
+	{
+		result =MC_EXIT;
 	}
 	else if(input[0]=='@')
 	{
-		//continue check 
-		//if(input[len_input]!='\\'){
-		//	MC_CONTINUE_INPUT;
-		//}
 		result =MC_SEND;
 	}else {
 	}
@@ -205,31 +212,57 @@ ParseResult parseInput(char* input)
 
 ParseResult parseInput2(char* input ,MSL_Message *msg)
 {
+	ParseResult ret = MC_SEND;
 	if(NULL==input || NULL==msg ){
 		return MC_INPUT_INVALID;
 	}
-	debug_printf("input=%s\n",input);
-	unsigned int len=strlen(input);
+	//debug_printf("input=%s\n",input);
+	unsigned int len_input=strlen(input);
 	unsigned int index=1;
-	if(len <=1){
+	unsigned int len_copy=0;
+	if(len_input <=1){
 		return MC_INPUT_INVALID;	
 	}
-	debug_printf("len=%d\n",len);
-	while(index<len &&input[index]!='\n')
-	{
-		if(input[index++] == ' '){
-			break;
+
+	if(strcmp(msg->destName,"")==0){
+		/*first input*/
+		//debug_printf("len_input=%d\n",len_input);
+		while(index<len_input &&input[index]!='\n')
+		{
+			if(input[index++] == ' '){
+				break;
+			}
+		}
+		//debug_printf("index=%d,len_input=%d\n",index,len_input);
+		if(index>20 ||index<1 ||len_input<index){
+			return MC_INPUT_INVALID;
+		}
+		
+		strncpy(msg->destName,input+1,index-2);
+		if(strcmp(msg->destName,"all")==0)
+	 	{
+	 	   	msg->commad =MSL_BROADCAST;	
+	 	}
+	}
+	else{
+		/*muti input*/
+		index=0; /*@ reback*/
+		if(strlen(msg->msg_buffer)+strlen(input)>1023){
+			return MC_INPUT_INVALID;
 		}
 	}
-	debug_printf("index=%d,len=%d\n",index,len);
-	if(index>20 ||index<1 ||len<index){
-		return MC_INPUT_INVALID;
-	}else{
-		strncpy(msg->destName,input+1,index-2);
-		strncpy(msg->msg_buffer,input+index,len -index);
-		debug_printf("name=%s,buf=%s\n",msg->destName,msg->msg_buffer);
-		return MC_SEND;
+
+	len_copy = len_input-index;
+	/*multi input check*/
+	if(input[len_input-1]=='\\')
+	{
+		len_copy--;
+		ret= MC_CONTINUE_INPUT;
 	}
+	strncat(msg->msg_buffer,input+index,len_copy);
+	//debug_printf("name=%s,buf=%s\n",msg->destName,msg->msg_buffer);
+	return ret;
+	
 }
 void *mc_send_msg_func(void *arg)
 {
@@ -260,7 +293,7 @@ void *mc_send_msg_func(void *arg)
         
         //login
         case MC_LOGIN:
-	     if(1!=my_status){
+	     //if(1!=my_status){
 		     memset(&message ,0,sizeof(message));	
 	            printf("Please Iput your name(must 2-19 alpha or digit number):\n");
 	            ret =scanf("%s",message.myName);
@@ -276,19 +309,19 @@ void *mc_send_msg_func(void *arg)
 		     strncpy(my_name,message.myName,sizeof(my_name));
 	            sleep(1);
 		     my_status=1;		
-	     }else{
-	            printf("You havn't logoned!");
-		     printf("%s>",ml_client.servIP);		
-	     }
+	    // }else if(1==my_status){
+		//printf("You have logoned!\n");
+		//     prompt();		
+	    // }
            // ret =system("clear");
             break;
         //register
         case MC_REGISTER:    
 	     memset(&message ,0,sizeof(message));		
-            printf("Please Input you passwd(must 5-19 alpha or digit number):\n");
+            printf("Input register name(must 5-19 alpha or digit number):\n");
             ret = scanf("%s",message.myName);
             getchar();
-            printf("Please Input you passwd(must 5-19 alpha or digit number):\n");
+            printf("Input register passwd(must 5-19 alpha or digit number):\n");
             ret = scanf("%s",message.destName);
             getchar();
 	     message.commad =MSL_REG;
@@ -297,7 +330,10 @@ void *mc_send_msg_func(void *arg)
             sleep(1);
             send(sockfd,&message,sizeof(message),0);
             sleep(1);
-	     printf("%s>",ml_client.servIP);			
+	     if(1 !=my_status){
+	          my_status=0;  /*if not login status set register status*/		
+	     }
+	     //prompt();		
             //ret =system("clear");
             break;
  
@@ -306,23 +342,29 @@ void *mc_send_msg_func(void *arg)
 	     memset(&message ,0,sizeof(message));	
             message.commad =MSL_SendMSG;	
 	     if(1==my_status){		
-		    input_result =parseInput2(input,&message);
+
+		   input_result =parseInput2(input,&message);
+		   while(MC_SEND!=input_result ){
+			memset(input,0,sizeof(input));     
+        		ret =scanf("%[^\n]",input);
+			 getchar();	
+		    	input_result =parseInput2(input,&message);
+		    }
+		    
 		     if(MC_SEND ==input_result){
-		 	   if(strcmp(message.destName,"all")==0)
-		 	   {
-		 	   	message.commad =MSL_BROADCAST;	
-		 	   }
     			   strncpy(message.myName,my_name,sizeof(my_name));
 		          send(sockfd,&message,sizeof(message),0);
-
-		     }else{
-		     	  printf("input format was not valid!\n");
-		         printf("%s|%s>",ml_client.servIP,my_name);
 		     }
-	     }else{
+		     else
+		     {
+		          printf("input format was not valid!\n");
+			   prompt();
+		     }
+	      }else{
 		    printf("Please login !");	
-		    printf("%s>",ml_client.servIP);
-	     }
+		    prompt();
+	      }
+	    
 	        break;          
         case MC_LOGOUT:
 	     memset(&message ,0,sizeof(message));	
@@ -331,33 +373,31 @@ void *mc_send_msg_func(void *arg)
 	     send(sockfd,&message,sizeof(message),0);
 		 
  	     my_status =-1;
-            //ret =system("clear"); 
             sleep(1);
-            exit(-1);
+	     prompt();		
             break;
+	 case MC_EXIT:
+	     memset(&message ,0,sizeof(message));	
+	     message.commad =MC_LOGOUT;
+	     strncpy(message.myName,my_name,sizeof(my_name));	 
+	     send(sockfd,&message,sizeof(message),0);
+ 	     my_status =-1;
+            sleep(1);
+            exit(0);
+            break;
+			
         default:
-            printf("\n");
+            printf("Input invalid.\n");
+	     prompt();
             break;
         
         }
 	if (ret<0){
-		   printf("command err\n");
+		printf("Input invalid.\n");
+		prompt();
 	}
     }
 }
- 
-
-
-int userRegister( MlClient *client)
-{
-	return 0;
-}
-
-int usrLogin(MlClient *client)
-{
-	return 0;
-}
-
 int main(int argc, char **argv)
 {
        int iRtn = 0;
@@ -389,45 +429,5 @@ int main(int argc, char **argv)
 
        close(sockfd);
 	return 0;
-#if 0
-	while(1){
-		iRtn = system("clear");
-		if(iRtn==-1){
-			//do nothing
-		}
-		if(-1==login_status){
-			printf("\t l login\n");
-			printf("\t r register\n");
-			printf("\t q quit\n");
-		}
-		
-		
-		if(scanf("%s", input)!=0)
-		{
-			if(strncmp("l",input,1)==0){
-				usrLogin(&ml_client);
-				login_status =1;
-			}
-			else if(strncmp("r",input,1)==0)
-			{
-				userRegister(&ml_client);
-				login_status =0;
-			}else if(strncmp("q",input,1)==0){
-				//show commands
-				login_status =-2;
-			}
-			else if(strncmp("@",input,1)==0){
-				//show commands
-				printf("send message!");
-			}
-			else if(strncmp("@",input,1)==0){
-				printf("invalid message or command!");
-			}
-		}
-		if(-2==login_status){
-			exit(0);
-		}
-	}
-#endif
 }
 

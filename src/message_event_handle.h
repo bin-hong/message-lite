@@ -8,7 +8,6 @@
  * \file message_event_handle.h
  */
 
-
 #ifndef _MESSAGE_EVENT_HANDLER_H
 #define _MESSAGE_EVENT_HANDLER_H
 
